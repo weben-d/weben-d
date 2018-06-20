@@ -1,3 +1,6 @@
 # DLしたimagesをgitにあげないようにする
 data/images/*
 
+# 解凍したchormedriverをgitにあげないようにする
+data/chromedriver*
+
