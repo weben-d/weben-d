@@ -34,7 +34,11 @@ while True:
 '''
 
 SavePath = "data/images/"
+# 対象ディレクトリがない場合に製作する
+if os.path.exists("data/images/")==False:os.mkdir("data/images/")
 DownloadPath = "data/download/"
+if os.path.exists("data/download/")==False:os.mkdir("data/download/")
+
 TmpFileName = "TmpFile"
 
 #前回のTmpファイルが残っていれば削除する。
@@ -56,7 +60,7 @@ os.mkdir(SavePath+Query)
 CurrentPath = os.path.dirname(os.path.abspath(__file__))
 if platform.system() == "Windows":
     DriverPath = "/data/chromedriver.exe"
-elif platform.system() == "MacOS":
+elif platform.system() == "Darwin":
     DriverPath = "/data/chromedriver_mac"
 elif platform.system() == "Linux":
     DriverPath = "/data/chromedriver_linux"
