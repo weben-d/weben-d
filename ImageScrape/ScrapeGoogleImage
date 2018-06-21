@@ -1,0 +1,185 @@
+import os
+import platform
+import shutil
+import sys
+from selenium import webdriver
+import traceback
+import urllib.request
+import urllib.error
+import imghdr
+import selenium
+
+class ScrapeGoogleImage:
+
+    def __init__(self):
+        self.Count = 0
+        self.Src = [None, None]
+        self.SrcCount = [0, 0]
+        self.OldSrcList = [[None],[None]]
+        self.SavePath = "data/images/"
+        self.DownloadPath = "data/download/"
+        self.TmpFileName = "TmpFile"
+        # 前回のTmpファイルが残っていれば削除する。
+
+        # 対象ディレクトリがない場合に製作する
+        if os.path.exists("data/images/") == False: os.mkdir("data/images/")
+        if os.path.exists("data/download/") == False: os.mkdir("data/download/")
+
+
+
+        # OSを識別し、それに応じてchromedriverを切り替える。
+        # 先頭に現在のディレクトリが来るのでpath先頭には/が必要。
+        self.CurrentPath = os.path.dirname(os.path.abspath(__file__))
+        print(self.CurrentPath)
+        if platform.system() == "Windows":
+            self.DriverPath = "/data/chromedriver_win.exe"
+        elif platform.system() == "MacOS":
+            self.DriverPath = "/data/chromedriver_mac"
+        elif platform.system() == "Linux":
+            self.DriverPath = "/data/chromedriver_linux"
+        else:
+            print("OSを識別できません。プログラムを終了します。")
+            sys.exit()
+        self.GoogleURL = "https://www.google.co.jp/imghp?hl=ja"
+
+
+
+
+
+        return
+
+
+    def GetQuery(self):
+        while True:
+            print("検索キーワードを入力してください。")
+            self.Query = input()
+            if self.Query != "":
+                break
+            print("キーワードが入力されていません。")
+        while True:
+            print("取得する枚数を入力してください。")
+            self.NumImage = float(input())
+            if self.NumImage.is_integer() and self.NumImage > 0 :break
+            print("枚数には自然数を入力してください。")
+        return
+    def MakeDirectory(self):
+
+        if os.path.exists(self.DownloadPath + self.TmpFileName) == True: os.remove(self.DownloadPath + self.TmpFileName)
+
+        if os.path.exists(self.SavePath + self.Query) == True:
+            while True:
+                print("すでに同じQueryの検索結果が存在します。既存の結果を削除しますか？(削除しない場合、既存の結果が上書きされます。) y or n")
+                if (input() == "y"):
+                    shutil.rmtree(self.SavePath + self.Query)
+                    break
+                elif (input() == "n"):
+                    break
+                else:
+                    print("yかnで入力してください。")
+        while True:
+            try:
+                os.mkdir(self.SavePath + self.Query)
+                break
+            except PermissionError:
+                print("アクセスが拒否されました！既存の結果のファイルもしくはフォルダを閉じてください。")
+                print("Please press any key to retry.")
+                input()
+        return
+
+
+    def OpenBrowser(self):
+        self.Browser = webdriver.Chrome(executable_path=self.CurrentPath + self.DriverPath)
+        self.Browser.get(self.GoogleURL)
+        return
+
+
+
+    def SearchImage(self):
+        # 検索窓にクエリを打ち込み、検索ボタンを押す。
+        self.Browser.find_element_by_css_selector("#lst-ib").send_keys(self.Query)
+        self.Browser.find_element_by_css_selector("#mKlEF > span > svg").click()
+        return
+
+
+    def GetElements(self):
+        Elements = self.Browser.find_elements_by_class_name("rg_ic")
+        return Elements
+
+
+
+    def ClickAndReset(self,Element):
+        Element.click()
+        self.SrcCount = [0,0]
+        self.Src = [None,None]
+        return
+
+
+    def GetSrc(self,Num):
+
+
+
+        #irc_miが原寸画像のリンク、irc_mutが縮小画像のリンクである。
+        #ものによってはmiが存在しないため、mutのほうを取得する。
+        #また、irc_miのクラス名を持つエレメントは通常3つ存在する。
+        #そのうち一つが現在選択している画像のもので、残りは過去に選択した画像である。
+        #そのため3つのエレメントのうち、取得に成功(Noneでない)かつ新しいものからダウンロードする。
+        #引数として与えられた番号によりmiかmutかを区別する。2以上のものが与えられたらエラー。
+
+        SrcList=[]
+        if Num == 0:
+            Class ="irc_mi"
+        elif Num == 1:
+            Class ="irc_mut"
+        else:
+            print("クラス名の番号が不正です。")
+            raise ValueError
+        ImageElements = self.Browser.find_elements_by_class_name(Class)
+
+
+        for i in ImageElements:
+            # print("i",i)
+            #srcを持っていない可能性がある。
+            try:
+                iSrc = i.get_attribute("src")
+                SrcList.append(iSrc)
+            except selenium.common.exceptions.StaleElementReferenceException:
+                print("Src見つかりません。")
+                SrcList.append(None)
+                continue
+
+        for s in SrcList:
+            if (s in self.OldSrcList[Num]) is False and (s is not None):
+                self.Src[Num] = s
+                self.SrcCount[Num] += 1
+
+        self.OldSrcList[Num] = SrcList
+
+        if self.SrcCount[0] == 0:
+            print("原寸大画像見つかりませんでした。縮小画像を取得します。")
+            self.SrcCount[0] = -1
+            return 1
+        elif self.SrcCount == [-1,0]:
+            print("画像リンクが見つかりませんでした。")
+            return 2
+
+        else: return 0
+
+    def DonloadAndIdentify(self,Num):
+
+        # urllib.request.urlretrieve(Src,"/data/download/TmpFile")
+        #print("num",Num,"Src",self.Src[Num])
+        urllib.request.urlretrieve(self.Src[Num], self.DownloadPath + self.TmpFileName)
+        # print("ダウンロードした")
+        Extension = imghdr.what(self.DownloadPath + self.TmpFileName, h=None)
+
+        # svg形式をimghdrで認識できないので、個別に対応。なお()をつけないとSrc==Trueかの判別式になるみたい。
+        if ("svg" in self.Src[Num]) == True:
+            Extension = "svg"
+            print("Extensionを", Extension, "に変更")
+        if Extension is not None:
+            os.rename(self.DownloadPath + self.TmpFileName,
+                      self.SavePath + self.Query + "/" + self.Query + "_" + str(self.Count + 1) + "." + Extension)
+            print(str(self.Count + 1) + "枚目取得成功。")
+            self.Count += 1
+
+
