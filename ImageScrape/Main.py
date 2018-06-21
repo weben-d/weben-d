@@ -4,71 +4,84 @@
 #また、最新版のchromeとchromedriverの組み合わせのみ動作するようです。
 
 
-from selenium import webdriver
-import selenium.common
-import os
-import time
-import platform
-import sys
-import traceback
-import urllib.request
+from ScrapeGoogleImage import ScrapeGoogleImage
 import urllib.error
-import imghdr
-import shutil
+import traceback
+import time
 
-print("検索するキーワードを入れてください。")
-Query = input()
+Scrape = ScrapeGoogleImage()
 
+Scrape.GetQuery()
+Scrape.MakeDirectory()
 
-'''
-print("svgを含みますか?y or n")
-while True:
-    if (input() == "y"):
-        SvgFlag = 1
-        break
-    elif(input() == "n"):
-        SvgFlag = 0
-        break
-    else:
-        print("yかnで入力してください。")
-'''
+Scrape.OpenBrowser()
+try:
+    Scrape.SearchImage()
 
-SavePath = "data/images/"
-# 対象ディレクトリがない場合に製作する
-if os.path.exists("data/images/")==False:os.mkdir("data/images/")
-DownloadPath = "data/download/"
-if os.path.exists("data/download/")==False:os.mkdir("data/download/")
-
-TmpFileName = "TmpFile"
-
-#前回のTmpファイルが残っていれば削除する。
-if os.path.exists(DownloadPath+TmpFileName)==True:os.remove(DownloadPath+TmpFileName)
-
-if os.path.exists(SavePath+Query) ==True:
     while True:
-        print("すでに同じQueryの検索結果が存在します。既存の結果を削除しますか？(削除しない場合、既存の結果が上書きされます。) y or n")
-        if (input()=="y"):
-            shutil.rmtree(SavePath+Query)
+        Elements = Scrape.GetElements()
+        for e in Elements:
+
+
+            Scrape.ClickAndReset(e)
+            GetSrcFlag = 0
+            try:
+                GetSrcFlag = Scrape.GetSrc(0)
+            except:
+                Scrape.SrcCount[0] = -1
+                traceback.print_exc()
+                print("原寸大画像取得中にエラーが発生しました。")
+            try:
+                #print("縮小画像の取得開始。")
+                GetSrcFlag = Scrape.GetSrc(1)
+            except:
+                traceback.print_exc()
+                print("縮小画像の取得中にエラーが発生しました。")
+
+            if GetSrcFlag == 2:
+                print("次の画像に移ります。")
+                continue
+            #print("GetSrcFlag",GetSrcFlag)
+            #print("SrcCount",Scrape.SrcCount)
+            print(str(Scrape.Count + 1) + "枚目取得開始。")
+
+            try:
+                Scrape.DonloadAndIdentify(0)
+            except (urllib.error.HTTPError,TypeError):
+                if Scrape.Src[0] is not None: print("原寸大画像の取得が禁止されているため、縮小画像を取得。")
+                Scrape.DonloadAndIdentify(1)
+
+            except:
+                traceback.print_exc()
+                print(str(Scrape.Count+1)+ "枚目ダウンロードできませんでした。")
+
+
+            if Scrape.Count >= Scrape.NumImage:break
+            time.sleep(1)
+
+
+        if Scrape.Count >= Scrape.NumImage:
+            print("目標枚数の収集が完了しました。")
             break
-        elif (input()=="n"):
-            break
-        else:print("yかnで入力してください。")
-os.mkdir(SavePath+Query)
-
-#OSを識別し、それに応じてchromedriverを切り替える。
-#先頭に現在のディレクトリが来るのでpath先頭には/が必要。
-CurrentPath = os.path.dirname(os.path.abspath(__file__))
-if platform.system() == "Windows":
-    DriverPath = "/data/chromedriver.exe"
-elif platform.system() == "Darwin":
-    DriverPath = "/data/chromedriver_mac"
-elif platform.system() == "Linux":
-    DriverPath = "/data/chromedriver_linux"
-else:
-    print("OSを識別できません。プログラムを終了します。")
-    sys.exit()
+            #ページ遷移するときのためのbreak
 
 
+
+    print("Complete! Please press any key to quit.")
+    input()
+    Scrape.Browser.quit()
+
+
+except:
+    print("ブラウザ起動後にエラー発生。")
+    traceback.print_exc()
+    print("Error! Please press any key to quit.")
+    input()
+    Scrape.Browser.quit()
+
+
+
+"""
 Browser = webdriver.Chrome(executable_path = CurrentPath + DriverPath)
 GoogleURL = "https://www.google.co.jp/imghp?hl=ja"
 Browser.get(GoogleURL)
@@ -154,22 +167,6 @@ try:
 
 
 
-
-        '''
-        try:
-            ImageElement = Browser.find_elements_by_class_name("irc_mi")[1]
-            Src = ImageElement.get_attribute("src")
-            if Src == None or Src == OldSrc:
-                ImageElement = Browser.find_elements_by_class_name("irc_mut")[1]
-                #print("irc_mut" + str(ImageElement))
-                Src = ImageElement.get_attribute("src")
-                if Src == None or Src == OldSrc:
-                    print("irc_mutでもsrc取得できませんでした。")
-        except:
-            print("Src取得中にエラー発生")
-            traceback.print_exc()
-        OldSrc = Src
-        '''
         print(str(Count + 1) + "枚目取得開始。")
         #print(Src)
 
@@ -227,6 +224,8 @@ except:
     print("ブラウザ起動後にエラー発生。")
     traceback.print_exc()
 
-print("Complete! Please press any key.")
+print("Complete! Please press any key to exit.")
 
+input()
 Browser.quit()
+"""
