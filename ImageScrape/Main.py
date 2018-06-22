@@ -67,11 +67,12 @@ try:
 
             #検索画面に戻る。戻らないと、縮小画像しか取得できないエラーがあようだ。
             Scrape.SwichWindow()
-            time.sleep(1)
+            time.sleep(Scrape.WaitTime)
         #下にスクロールするにしたがって新しい画像が表示される。そのエレメントを取得。
         #これまでのエレメントと比較して新しいものだけを抜き出す。
         NewElements = Scrape.GetElements()
         Elements = [i for i in NewElements if (i in AllElements) is False ]
+        AllElements = NewElements
         if Scrape.Count >= Scrape.NumImage:
             print("指定枚数の取得を完了しました。")
             break
@@ -101,4 +102,3 @@ except:
     print("Error! Please press any key to quit.")
     input()
     Scrape.Browser.quit()
-
