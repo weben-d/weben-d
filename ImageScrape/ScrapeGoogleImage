@@ -53,10 +53,18 @@ class ScrapeGoogleImage:
             print("キーワードが入力されていません。")
         while True:
             print("取得する枚数を入力してください。")
-            self.NumImage = float(input())
-            if self.NumImage.is_integer() and self.NumImage > 0 :break
-
+            try:
+                self.NumImage = float(input())
+                if self.NumImage.is_integer() and self.NumImage > 0: break
+            except:print("入力エラー！")
             print("枚数には自然数を入力してください。")
+        while True:
+            print("画像1枚ごとに待機する時間を入力してください。（ネットワーク不可軽減のため。）")
+            try:
+                self.WaitTime = float(input())
+                if self.WaitTime >=0:break
+            except:print("入力エラー！")
+            print("正の数字を入力してください。")
         return
     def MakeDirectory(self):
 
