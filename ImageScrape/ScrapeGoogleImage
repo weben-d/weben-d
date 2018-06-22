@@ -33,7 +33,7 @@ class ScrapeGoogleImage:
         print(self.CurrentPath)
         if platform.system() == "Windows":
             self.DriverPath = "/data/chromedriver_win.exe"
-        elif platform.system() == "MacOS":
+        elif platform.system() == "Darwin":
             self.DriverPath = "/data/chromedriver_mac"
         elif platform.system() == "Linux":
             self.DriverPath = "/data/chromedriver_linux"
