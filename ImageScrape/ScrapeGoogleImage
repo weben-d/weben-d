@@ -33,7 +33,7 @@ class ScrapeGoogleImage:
         print(self.CurrentPath)
         if platform.system() == "Windows":
             self.DriverPath = "/data/chromedriver_win.exe"
-        elif platform.system() == "MacOS":
+        elif platform.system() == "Darwin":
             self.DriverPath = "/data/chromedriver_mac"
         elif platform.system() == "Linux":
             self.DriverPath = "/data/chromedriver_linux"
@@ -41,11 +41,6 @@ class ScrapeGoogleImage:
             print("OSを識別できません。プログラムを終了します。")
             sys.exit()
         self.GoogleURL = "https://www.google.co.jp/imghp?hl=ja"
-
-
-
-
-
         return
 
 
@@ -58,9 +53,18 @@ class ScrapeGoogleImage:
             print("キーワードが入力されていません。")
         while True:
             print("取得する枚数を入力してください。")
-            self.NumImage = float(input())
-            if self.NumImage.is_integer() and self.NumImage > 0 :break
+            try:
+                self.NumImage = float(input())
+                if self.NumImage.is_integer() and self.NumImage > 0: break
+            except:print("入力エラー！")
             print("枚数には自然数を入力してください。")
+        while True:
+            print("画像1枚ごとに待機する時間を入力してください。（ネットワーク不可軽減のため。）")
+            try:
+                self.WaitTime = float(input())
+                if self.WaitTime >=0:break
+            except:print("入力エラー！")
+            print("正の数字を入力してください。")
         return
     def MakeDirectory(self):
 
@@ -90,6 +94,8 @@ class ScrapeGoogleImage:
     def OpenBrowser(self):
         self.Browser = webdriver.Chrome(executable_path=self.CurrentPath + self.DriverPath)
         self.Browser.get(self.GoogleURL)
+        self.SearchWindow = self.Browser.current_window_handle
+
         return
 
 
@@ -181,5 +187,12 @@ class ScrapeGoogleImage:
                       self.SavePath + self.Query + "/" + self.Query + "_" + str(self.Count + 1) + "." + Extension)
             print(str(self.Count + 1) + "枚目取得成功。")
             self.Count += 1
+        return
 
+    def ShowMoreImage(self):
+        self.Browser.find_element_by_class_name("smb")
+        return
 
+    def SwichWindow(self):
+        self.Browser.switch_to.window(self.SearchWindow)
+        return
